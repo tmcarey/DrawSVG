@@ -56,7 +56,7 @@ void SoftwareRendererImp::set_render_target( unsigned char* render_target,
   this->render_target = render_target;
   this->target_w = width;
   this->target_h = height;
-
+  this->super_sample_buffer = memset
 }
 
 void SoftwareRendererImp::draw_element( SVGElement* element ) {
@@ -226,16 +226,26 @@ void SoftwareRendererImp::rasterize_point( float x, float y, Color color ) {
   int sx = (int) floor(x);
   int sy = (int) floor(y);
 
-  // check bounds
   if ( sx < 0 || sx >= target_w ) return;
   if ( sy < 0 || sy >= target_h ) return;
 
-  // fill sample - NOT doing alpha blending!
-  render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
-  render_target[4 * (sx + sy * target_w) + 1] = (uint8_t) (color.g * 255);
-  render_target[4 * (sx + sy * target_w) + 2] = (uint8_t) (color.b * 255);
-  render_target[4 * (sx + sy * target_w) + 3] = (uint8_t) (color.a * 255);
-
+    Color originalColor = Color(
+      0.0f, //(float)(render_target[4 * (sx + sy * target_w)]) / 255.0f,
+      0.0f, //(float)(render_target[4 * (sx + sy * target_w) + 1]) / 255.0f,
+      0.0f, //(float)(render_target[4 * (sx + sy * target_w) + 2]) / 255.0f,
+      1.0f
+    );
+    color.r *= color.a;
+    color.g *= color.a;
+    color.b *= color.a;
+    render_target[4 * (sx + sy * target_w)] = (uint8_t)((((1 - color.a) * originalColor.r) + color.r) * 255);
+    render_target[4 * (sx + sy * target_w) + 1] = (uint8_t)((((1 - color.a) * originalColor.g) + color.g) * 255);
+    render_target[4 * (sx + sy * target_w) + 2] = (uint8_t)((((1 - color.a) * originalColor.b) + color.b) * 255);
+    render_target[4 * (sx + sy * target_w) + 3] = (uint8_t)(255);
+    /*render_target[4 * (sx + sy * target_w)] = (uint8_t)(color.r * 255);
+    render_target[4 * (sx + sy * target_w) + 1] = (uint8_t)(color.g * 255);
+    render_target[4 * (sx + sy * target_w) + 2] = (uint8_t)(color.b * 255);
+    render_target[4 * (sx + sy * target_w) + 3] = (uint8_t)(color.a * 255);*/
 }
 
 void SoftwareRendererImp::rasterize_line( float x0, float y0,
@@ -244,6 +254,95 @@ void SoftwareRendererImp::rasterize_line( float x0, float y0,
 
   // Task 2: 
   // Implement line rasterization
+
+  bool ySteep = abs(y1 - y0) > abs(x1 - x0);
+  const float WIDTH = 1;
+
+  //Ensure Delta X > Delta Y and we are positively oriented
+  if(ySteep){
+    float temp = x0;
+    x0 = y0;
+    y0 = temp;
+    temp = x1;
+    x1 = y1;
+    y1 = temp;
+  }
+
+  bool positiveOrientation = x1 > x0;
+  if(!positiveOrientation){
+    float temp = x0;
+    x0 = x1;
+    x1 = temp;
+    temp = y0;
+    y0 = y1;
+    y1 = temp;
+  }
+
+  // transform coords so center of pixels are (0, 0)
+  y1 -= 0.5f;
+  y0 -= 0.5f;
+  x1 -= 0.5f;
+  x0 -= 0.5f;
+
+  float deltaX = x1 - x0;
+  float deltaY = y1 - y0;
+  float gradient = deltaY / deltaX;
+  if (deltaX == 0) {
+    gradient = 1.0f;
+  }
+  
+  float xStart = floor(x0 + 0.5f);
+  float yStart = y0 + gradient  * (xStart - x0);
+  float xDist = 1 - (x0 + 0.5f - xStart);
+  float yDist = (yStart) - floor(yStart) ;
+  float xPixel0 = xStart;
+  float yPixel0 = floor(yStart);
+  if (ySteep){
+    rasterize_point(yPixel0, xPixel0, color * (xDist) * (1 - yDist));
+    rasterize_point(yPixel0 + 1, xPixel0, color * xDist * (yDist));
+  }else{
+    rasterize_point(xPixel0, yPixel0, color * xDist * (1 - yDist));
+    rasterize_point(xPixel0, yPixel0 + 1, color * xDist * (yDist));
+  }
+
+  float xEnd = floor(x1 + 0.5f);
+  float yEnd = y1 + gradient * (xEnd - x1);
+  xDist = (x1  + 0.5f - xEnd);
+  yDist = (yEnd) - floor(yEnd);
+  int xPixel1 = xEnd;
+  int yPixel1 = floor(yEnd);
+  if (ySteep){
+    rasterize_point(yPixel1, xPixel1, color * (xDist) * (1 - yDist));
+    rasterize_point(yPixel1 + 1, xPixel1, color * (xDist) * (yDist));
+  }else{
+    rasterize_point(xPixel1, yPixel1, color * (xDist) * (1 - yDist));
+    rasterize_point(xPixel1, yPixel1 + 1, color * (xDist) * (yDist));
+  }
+
+  
+  float yIntersect = yStart + gradient;
+  float yIntersectFract = yIntersect - floor(yIntersect);
+  if (ySteep) {
+     for (float x = xPixel0 + 1; x < xPixel1; x++){
+       rasterize_point(floor(yIntersect), x, color * (1 - (yIntersectFract)));
+       for(float i = 1; i < WIDTH; i++){
+         rasterize_point(floor(yIntersect) + i, x, color);
+       }
+       rasterize_point(floor(yIntersect) + WIDTH, x, color * yIntersectFract);
+       yIntersect += gradient;
+       yIntersectFract = yIntersect - floor(yIntersect);
+     }
+  }else{    
+    for (float x = xPixel0 + 1; x < xPixel1; x++){
+       rasterize_point(x, floor(yIntersect), color * (1 - (yIntersectFract)));
+       for(float i = 1; i < WIDTH; i++){
+         rasterize_point(x, floor(yIntersect) + i, color);
+       }
+       rasterize_point(x, floor(yIntersect) + WIDTH, color * yIntersectFract);
+       yIntersect += gradient;
+       yIntersectFract = yIntersect - floor(yIntersect);
+     }
+  }
 }
 
 void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
@@ -252,7 +351,56 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
                                               Color color ) {
   // Task 3: 
   // Implement triangle rasterization
+  // transform coords so center of pixels are (0, 0)
+  x0 -= 0.5f;
+  x1 -= 0.5f;
+  x2 -= 0.5f;
+  y2 -= 0.5f;
+  y1 -= 0.5f;
+  y0 -= 0.5f;
+  float maxX = floor(max(x0, max(x1, x2)) + 0.5f);
+  float minX = floor(min(x0, min(x1, x2)) + 0.5f);
+  float maxY = floor(max(y0, max(y1, y2)) + 0.5f);
+  float minY = floor(min(y0, min(y1, y2)) + 0.5f);
+  Vector2D vec0 = Vector2D((x1 - x0), (y1 - y0));
+  Vector2D vec1 = Vector2D((x2 - x1), (y2 - y1));
+  Vector2D vec2 = Vector2D((x0 - x2), (y0 - y2));
+  bool isCounterClockwise = cross(vec0, -1 * vec2) > 0;
 
+  float sampleRate = (float) sample_rate;
+  float sampleOffset = 1.0f / (sampleRate);
+  float halfOffset = sampleOffset / 2.0f;
+  float totalSamples = (float) sampleRate * sampleRate;
+  for (int x = minX; x < maxX + 1; x++){
+    for (int y = minY; y < maxY + 1; y++){
+      int trueSamples = 0;
+      for (float sx = 0; sx < sampleRate; sx++){
+        for (float sy = 0; sy < sampleRate; sy++){
+          bool doesContain = false;
+          float sampledX = (x - 0.5f) + halfOffset + (sx * sampleOffset);
+          float sampledY = (y - 0.5f) + halfOffset + (sy * sampleOffset);
+          if (isCounterClockwise)
+          {
+            doesContain = cross(Vector2D(sampledX - x0, sampledY - y0), vec0) <= 0
+            && cross(Vector2D(sampledX - x1, sampledY - y1), vec1) <= 0 
+            && cross(Vector2D(sampledX - x2, sampledY - y2), vec2) <= 0;
+          }
+          else
+          {
+            doesContain = cross(Vector2D(sampledX - x0, sampledY - y0), vec0) >= 0
+            && cross(Vector2D(sampledX - x1, sampledY - y1), vec1) >= 0 
+            && cross(Vector2D(sampledX - x2, sampledY - y2), vec2) >= 0;
+          }
+          if(doesContain){
+            trueSamples++;
+          }
+        }
+      }
+      if(trueSamples > 0){
+        rasterize_point(x, y, color * ((float)(trueSamples) / sample_rate));
+      }
+   }
+  }
 }
 
 void SoftwareRendererImp::rasterize_image( float x0, float y0,

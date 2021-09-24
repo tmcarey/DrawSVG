@@ -51,6 +51,8 @@ class SoftwareRenderer : public SVGRenderer {
   // Render target memory location
   unsigned char* render_target; 
 
+  unsigned char* super_sample_buffer;
+
   // Target buffer dimension (in pixels)
   size_t target_w; size_t target_h;
 
@@ -117,7 +119,7 @@ class SoftwareRendererImp : public SoftwareRenderer {
   // rasterize a line
   void rasterize_line( float x0, float y0,
                        float x1, float y1,
-                       Color color);
+                       Color color );
 
   // rasterize a triangle
   void rasterize_triangle( float x0, float y0,
