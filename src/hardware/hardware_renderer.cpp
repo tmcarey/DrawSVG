@@ -257,6 +257,7 @@ void HardwareRenderer::rasterize_line(float x0, float y0,
   // Task 1: 
   // Implement line rasterization
   glBegin(GL_LINES);
+  glColor3f(color.r, color.g, color.b);
   glVertex2f(x0, y0);
   glVertex2f(x1, y1);
   glEnd();
@@ -270,6 +271,7 @@ void HardwareRenderer::rasterize_triangle(float x0, float y0,
   // Task 1: 
   // Implement triangle rasterization
   glBegin(GL_TRIANGLES);
+  glColor3f(color.r, color.g, color.b);
   glVertex2f(x0, y0);
   glVertex2f(x1, y1);
   glVertex2f(x2, y2);

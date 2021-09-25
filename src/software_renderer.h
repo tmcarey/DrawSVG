@@ -51,8 +51,6 @@ class SoftwareRenderer : public SVGRenderer {
   // Render target memory location
   unsigned char* render_target; 
 
-  unsigned char* super_sample_buffer;
-
   // Target buffer dimension (in pixels)
   size_t target_w; size_t target_h;
 
@@ -86,6 +84,10 @@ class SoftwareRendererImp : public SoftwareRenderer {
 
   // Draws an SVG element
   void draw_element( SVGElement* element );
+
+  void clear_samples();
+
+  void rasterize_sample(float x, float y, Color col);
 
   // Draws a point
   void draw_point( Point& p );

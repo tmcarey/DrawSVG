@@ -1,4 +1,4 @@
-AndrewID: ??????
+AndrewID: tcarey
 
 Task 1:
 
@@ -6,7 +6,7 @@ Task 1:
 
 Task 2:
 
-    Fully implemented.
+    Fully implemented with Xiaolin Wu's algorithm and support for line width. Exactly matches reference.
 
 Task 3:
 
@@ -18,24 +18,21 @@ Task 4:
 
 Task 5:
 
-    Fully implemented.
+    Not yet implemented.
 
 Task 6:
 
-    Fully implemented.
+    Not yet implemented.
 
 Task 7:
 
-    Fully implemented.
+    Not yet implemented.
 
 Task 8:
 
-    Fully implemented.
+    Not yet implemented.
 
 Extra credit:
 
-    I completed the following extra credit work... (or N/A)
+    Completed extra credit work on Task 2. Implemented Xiaolin Wu's algorithm and line width support. 
 
-Any other comments and considerations:
-
-    ....
