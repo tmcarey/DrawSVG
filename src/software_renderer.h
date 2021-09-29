@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <vector>
+#include <stack>
 
 #include "CMU462.h"
 #include "texture.h"
@@ -213,6 +214,7 @@ class SoftwareRendererRef : public SoftwareRenderer {
   // Helpers //
   // HINT: you may want to have something similar //
   std::vector<unsigned char> sample_buffer; int w; int h;
+  std::stack<Matrix3x3> transformation_stack;
   void fill_sample( int sx, int sy, const Color& c );
   void fill_pixel( int x, int y, const Color& c );
 

@@ -14,14 +14,16 @@ namespace CMU462 {
 
 // Implements SoftwareRenderer //
 unsigned char* super_sample_buffer;
+std::stack<Matrix3x3> transformation_stack;
 int ss_target_w;
 int ss_target_h;
 
 void SoftwareRendererImp::draw_svg( SVG& svg ) {
 
   // set top level transformation
+  transformation_stack = std::stack<Matrix3x3>();
   transformation = svg_2_screen;
-
+  
   // draw all elements
   for ( size_t i = 0; i < svg.elements.size(); ++i ) {
     draw_element(svg.elements[i]);
@@ -83,11 +85,25 @@ void SoftwareRendererImp::clear_samples(){
   memset((uint8_t*)super_sample_buffer, 255, 4 * ss_target_h * ss_target_w);
 }
 
+Vector2D vec3Dto2D (Vector3D vector){
+  return Vector2D(vector.x / vector.z, vector.y / vector.z);
+}
+
+Vector3D vec2Dto3D (Vector2D vector){
+  return Vector3D(vector.x, vector.y, 1.0f);
+}
+
+Vector2D transformPoint(Matrix3x3 transformation, Vector2D point){
+  return vec3Dto2D(transformation * vec2Dto3D(point));
+}
+
 void SoftwareRendererImp::draw_element( SVGElement* element ) {
 
   // Task 5 (part 1):
   // Modify this to implement the transformation stack
 
+  transformation_stack.push(transformation);
+  transformation = transformation * element->transform;
   switch(element->type) {
     case POINT:
       draw_point(static_cast<Point&>(*element));
@@ -116,7 +132,8 @@ void SoftwareRendererImp::draw_element( SVGElement* element ) {
     default:
       break;
   }
-
+  transformation = transformation_stack.top();
+  transformation_stack.pop();
 }
 
 
