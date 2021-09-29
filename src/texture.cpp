@@ -82,21 +82,49 @@ Color Sampler2DImp::sample_nearest(Texture& tex,
                                    float u, float v, 
                                    int level) {
 
+  if(level < 0 || level >= tex.mipmap.size()){
+    return Color(1, 0, 1, 1);
+  }
   // Task 6: Implement nearest neighbour interpolation
-  
-  // return magenta for invalid level
-  return Color(1,0,1,1);
+  MipLevel mip = tex.mipmap[level];
+  int idx_w = (u * mip.width);
+  int idx_h = (v * mip.height);
+  return getColorAtTexel(mip, idx_w, idx_h);
+}
 
+Color Sampler2DImp::getColorAtTexel(MipLevel mip, int x, int y){
+  int idx = 4 * (x + (y * mip.width));
+  if(idx < 0 || idx >= mip.texels.size()){
+    return Color(1, 0, 1, 1);
+  }
+  return Color(mip.texels[idx] / 255.f,
+               mip.texels[idx + 1] / 255.f,
+               mip.texels[idx + 2] / 255.f,
+               mip.texels[idx + 3] / 255.f);
 }
 
 Color Sampler2DImp::sample_bilinear(Texture& tex, 
                                     float u, float v, 
                                     int level) {
   
+  if(level < 0 || level >= tex.mipmap.size()){
+    return Color(1, 0, 1, 1);
+  }
   // Task 6: Implement bilinear filtering
+  MipLevel mip = tex.mipmap[level];
+  float idx_w = max(0.f, (u * mip.width - 0.5f));
+  float idx_h = max(0.f, (v * mip.height - 0.5f));
+  float x0 = floor(idx_w);
+  float y0 = floor(idx_h);
+  float s = (idx_w - x0);
+  float t = idx_h - y0;
+  Color c00 = getColorAtTexel(mip, x0, y0);
+  Color c01 = getColorAtTexel(mip, x0, y0 + 1);
+  Color c10 = getColorAtTexel(mip, x0 + 1, y0);
+  Color c11 = getColorAtTexel(mip, x0 + 1, y0 + 1);
+  return (1.f - t) * ((1.f - s) * c00 + s * c10) 
+      +  t * ((1.f - s) * c01 + s * c11);
 
-  // return magenta for invalid level
-  return Color(1,0,1,1);
 
 }
 

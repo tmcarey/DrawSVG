@@ -75,6 +75,8 @@ class Sampler2DImp : public Sampler2D {
   Color sample_trilinear(Texture& tex, 
                          float u, float v, 
                          float u_scale, float v_scale);
+ private:
+  Color getColorAtTexel(MipLevel mip, int x, int y);
   
 }; // class sampler2DImp
 

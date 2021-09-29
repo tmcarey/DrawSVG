@@ -457,6 +457,19 @@ void SoftwareRendererImp::rasterize_image( float x0, float y0,
                                            Texture& tex ) {
   // Task 6: 
   // Implement image rasterization
+  float minX = floor(x0);
+  float maxX = floor(x1);
+  float minY = floor(y0);
+  float maxY = floor(y1);
+  float spanX = 1 + maxX - minX;
+  float spanY = 1 + maxY - minY;
+  for(float x = minX; x <= maxX; x++){
+    for (float y = minY; y <= maxY; y++){
+      float nx = (x - minX) / spanX;
+      float ny = (y - minY) / spanY;
+      rasterize_point(x, y, sampler->sample_bilinear(tex, nx, ny, 0));
+    }
+  }
 
 }
 
